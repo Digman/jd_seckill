@@ -112,7 +112,8 @@ def open_image(image_file):
             if "deepin" in os.uname()[2]:
                 os.system("deepin-image-viewer " + image_file)  # for deepin
             else:
-                os.system("eog " + image_file)  # for Linux
+                # os.system("eog " + image_file)  # for Linux
+                os.system("zbarimg " + image_file + " | qrencode -o - -t UTF8") # for Linux Terminal
         else:
             os.system("open " + image_file)  # for Mac
 

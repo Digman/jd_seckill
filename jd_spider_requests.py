@@ -268,6 +268,7 @@ class QrLogin:
 
 class JdSeckill(object):
     def __init__(self):
+        logger.info('初始化数据...')
         self.spider_session = SpiderSession()
         self.spider_session.load_cookies_from_local()
 
@@ -275,7 +276,8 @@ class JdSeckill(object):
 
         # 初始化信息
         self.sku_id = global_config.getRaw('config', 'sku_id')
-        self.seckill_num = 2
+        self.work_count = int(global_config.getRaw('config', 'work_count'))
+        self.seckill_num = int(global_config.getRaw('config', 'seckill_num'))
         self.seckill_init_info = dict()
         self.seckill_url = dict()
         self.seckill_order_data = dict()
@@ -329,13 +331,13 @@ class JdSeckill(object):
         self._seckill()
 
     @check_login
-    def seckill_by_proc_pool(self, work_count=5):
+    def seckill_by_proc_pool(self):
         """
         多进程进行抢购
         work_count：进程数量
         """
-        with ProcessPoolExecutor(work_count) as pool:
-            for i in range(work_count):
+        with ProcessPoolExecutor(self.work_count) as pool:
+            for i in range(self.work_count):
                 pool.submit(self.seckill)
 
     def _reserve(self):
