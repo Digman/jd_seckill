@@ -639,8 +639,8 @@ class JdSeckill(object):
         if global_config.getRaw('messenger', 'enable') == 'true':
             logger.info("send wechat: {}".format(send_wechat(message).text))
         else:
-            logger.ino("微信推送未启用")
+            logger.warning("微信推送未启用")
         if global_config.getRaw('messenger', 'bark_enable') == 'true':
             logger.info("send bark: {}".format(send_bark(message).text))
         else:
-            logger.error("Bark推送未启用")
+            logger.warning("Bark推送未启用")
