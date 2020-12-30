@@ -15,6 +15,7 @@ from exception import SKException
 from util import (
     parse_json,
     send_wechat,
+    send_bark,
     wait_some_time,
     response_status,
     save_image,
@@ -383,13 +384,15 @@ class JdSeckill(object):
         resp_json = parse_json(resp.text)
         reserve_url = resp_json.get('url')
         self.timers.start()
+        message = '预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约'
         while True:
             try:
                 self.session.get(url='https:' + reserve_url)
-                logger.info('预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约')
+                logger.info(message)
                 if global_config.getRaw('messenger', 'enable') == 'true':
-                    success_message = "预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约"
-                    send_wechat(success_message)
+                    send_wechat(message)
+                if global_config.getRaw('messenger', 'bark_enable') == 'true':
+                    send_bark(message)
                 break
             except Exception as e:
                 logger.error('预约失败正在重试...')
@@ -614,14 +617,30 @@ class JdSeckill(object):
             order_id = resp_json.get('orderId')
             total_money = resp_json.get('totalMoney')
             pay_url = 'https:' + resp_json.get('pcUrl')
-            logger.info('抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id, total_money, pay_url))
+            message = '抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id, total_money, pay_url)
+            logger.info(message)
             if global_config.getRaw('messenger', 'enable') == 'true':
-                success_message = "抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}".format(order_id, total_money, pay_url)
-                send_wechat(success_message)
+                send_wechat(message)
+            if global_config.getRaw('messenger', 'bark_enable') == 'true':
+                send_bark(message)
             return True
         else:
-            logger.info('抢购失败，返回信息:{}'.format(resp_json))
+            message = '抢购失败，返回信息:{}'.format(resp_json)
+            logger.info(message)
             if global_config.getRaw('messenger', 'enable') == 'true':
-                error_message = '抢购失败，返回信息:{}'.format(resp_json)
-                send_wechat(error_message)
+                send_wechat(message)
+            if global_config.getRaw('messenger', 'bark_enable') == 'true':
+                send_bark(message)
             return False
+
+    def test_message(self):
+        """推送测试消息"""
+        message = '抢购成功，订单号:{}, 总价:{}'.format(int(time.time() * 10000), 1499 * random.randint(1, 2))
+        if global_config.getRaw('messenger', 'enable') == 'true':
+            logger.info("send wechat: {}".format(send_wechat(message).text))
+        else:
+            logger.ino("微信推送未启用")
+        if global_config.getRaw('messenger', 'bark_enable') == 'true':
+            logger.info("send bark: {}".format(send_bark(message).text))
+        else:
+            logger.error("Bark推送未启用")

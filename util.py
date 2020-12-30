@@ -94,7 +94,18 @@ def send_wechat(message):
     headers = {
         'User-Agent':global_config.getRaw('config', 'DEFAULT_USER_AGENT')
     }
-    requests.get(url, params=payload, headers=headers)
+    return requests.get(url, params=payload, headers=headers)
+
+
+def send_bark(message):
+    """推送消息到Bark App"""
+    url = 'https://api.day.app/{}/{}/{}'.format(global_config.getRaw('messenger', 'bark_key'), '抢购结果', message)
+
+    payload = {
+        "url": 'openapp.jdmobile://virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
+    }
+
+    return requests.get(url, params=payload)
 
 
 def response_status(resp):
