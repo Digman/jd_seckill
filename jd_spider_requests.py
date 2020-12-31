@@ -294,8 +294,8 @@ class JdSeckill(object):
         self.bark_enable = global_config.getRaw('messenger', 'bark_enable')
 
         logger.info(
-            "初始化成功，进程数量【%d】, 抢购商品数量【%d】, 初始抢购时间【%s】, 抢购持续时长【%d毫秒】",
-            self.work_count, self.seckill_num, self.timers.buy_time, self.timers.max_duration
+            "初始化成功，进程数量【%d】, 抢购商品数量【%d】, 初始抢购时间【%s】, 抢购持续时长【%d秒】",
+            self.work_count, self.seckill_num, self.timers.buy_time, int(self.timers.max_duration / 1000)
         )
 
     def login_by_qrcode(self):
