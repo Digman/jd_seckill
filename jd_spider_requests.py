@@ -180,7 +180,7 @@ class QrLogin:
         save_image(resp, self.qrcode_img_file)
         logger.info('二维码获取成功，请打开京东APP扫描')
 
-        open_image(add_bg_for_qr(self.qrcode_img_file))
+        open_image(self.qrcode_img_file)
         if global_config.getRaw('messenger', 'bark_enable') == 'true':
             send_bark('二维码获取成功，请打开京东APP扫描', False)
         return True
@@ -289,6 +289,7 @@ class JdSeckill(object):
         self.session = self.spider_session.get_session()
         self.user_agent = self.spider_session.user_agent
         self.nick_name = None
+        self.success = False
 
     def login_by_qrcode(self):
         """
@@ -337,11 +338,21 @@ class JdSeckill(object):
     def seckill_by_proc_pool(self):
         """
         多进程进行抢购
-        work_count：进程数量
         """
         with ProcessPoolExecutor(self.work_count) as pool:
             for i in range(self.work_count):
                 pool.submit(self.seckill)
+
+    def reserve_seckill_until_success(self):
+        """
+        在未成功抢购时持续预约和抢购
+        :return:
+        """
+        while not self.success:
+            self.reserve()
+            self.seckill_by_proc_pool()
+            logger.info("等待1小时开启下一轮预约和抢购...")
+            wait_some_time(3600)
 
     def _reserve(self):
         """
@@ -359,15 +370,20 @@ class JdSeckill(object):
         """
         抢购
         """
-        while True:
+        while self.timers.enabled():
             try:
                 self.request_seckill_url()
-                while True:
+                while self.timers.enabled():
                     self.request_seckill_checkout_page()
-                    self.submit_seckill_order()
+                    if self.submit_seckill_order():
+                        self.success = True
+                        break
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
-            wait_some_time()
+            if self.success:
+                break
+            else:
+                wait_some_time()
 
     def make_reserve(self):
         """商品预约"""
@@ -385,11 +401,17 @@ class JdSeckill(object):
         resp = self.session.get(url=url, params=payload, headers=headers)
         resp_json = parse_json(resp.text)
         reserve_url = resp_json.get('url')
-        self.timers.start()
+        # 从api设定预约和抢购开始时间
+        reserve_stime = resp_json.get('yueStime')
+        buy_stime = resp_json.get('qiangStime')
+        self.timers.init_time(reserve_stime)
+        self.timers.start('预约')
         message = '预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约'
-        while True:
+        while self.timers.enabled():
             try:
                 self.session.get(url='https:' + reserve_url)
+                # 从api设定抢购开始时间
+                self.timers.init_time(buy_stime)
                 logger.info(message)
                 if global_config.getRaw('messenger', 'enable') == 'true':
                     send_wechat(message)
@@ -398,6 +420,7 @@ class JdSeckill(object):
                 break
             except Exception as e:
                 logger.error('预约失败正在重试...')
+                wait_some_time()
 
     def get_username(self):
         """获取用户信息"""
@@ -451,7 +474,7 @@ class JdSeckill(object):
             'Host': 'itemko.jd.com',
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
-        while True:
+        while self.timers.enabled():
             resp = self.session.get(url=url, headers=headers, params=payload)
             resp_json = parse_json(resp.text)
             if resp_json.get('url'):
@@ -473,7 +496,11 @@ class JdSeckill(object):
         logger.info('商品名称:{}'.format(self.get_sku_title()))
         self.timers.start()
         self.seckill_url[self.sku_id] = self.get_seckill_url()
-        logger.info('访问商品的抢购连接...')
+        if not self.seckill_url[self.sku_id]:
+            logger.error("无法获取商品抢购链接")
+            return
+        else:
+            logger.info('访问商品的抢购链接...')
         headers = {
             'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
@@ -627,12 +654,7 @@ class JdSeckill(object):
                 send_bark(message)
             return True
         else:
-            message = '抢购失败，返回信息:{}'.format(resp_json)
-            logger.info(message)
-            if global_config.getRaw('messenger', 'enable') == 'true':
-                send_wechat(message)
-            if global_config.getRaw('messenger', 'bark_enable') == 'true':
-                send_bark(message)
+            logger.info('抢购失败，返回信息:{}'.format(resp_json))
             return False
 
     def test_message(self):

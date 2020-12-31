@@ -12,17 +12,21 @@ if __name__ == '__main__':
  +---+-----------------------+
  | 2 | 秒杀抢购商品          |
  +---+-----------------------+
- | 3 | 推送测试              |
+ | 3 | 预约并抢购商品        |
+ +---+-----------------------+
+ | 4 | 推送测试              |
  +---+-----------------------+
         """
         print(a)
-        choice_function = input('请选择[1-3]: ')
+        choice_function = input('请选择[1-4]: ')
         jd_seckill = JdSeckill()
         if choice_function == '1':
             jd_seckill.reserve()
         elif choice_function == '2':
             jd_seckill.seckill_by_proc_pool()
         elif choice_function == '3':
+            jd_seckill.reserve_seckill_until_success()
+        elif choice_function == '4':
             jd_seckill.test_message()
         else:
             print('没有此功能')

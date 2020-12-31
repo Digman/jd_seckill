@@ -78,8 +78,9 @@ def get_random_useragent():
     return random.choice(USER_AGENTS)
 
 
-def wait_some_time():
-    time.sleep(random.randint(100, 300) / 1000)
+def wait_some_time(secs=0):
+    secs = random.randint(100, 300) / 1000 if not secs else secs
+    time.sleep(secs)
 
 
 def send_wechat(message):
