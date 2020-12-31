@@ -136,7 +136,7 @@ def open_image(image_file):
                 is_showed = True
                 print("\n")
         if not is_showed:
-            jump_url = 'scan'
+            jump_url = 'scan' if not jump_url else jump_url
             if os.uname()[0] == "Linux":
                 if "deepin" in os.uname()[2]:
                     os.system("deepin-image-viewer " + image_file)  # for deepin
