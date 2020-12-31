@@ -181,8 +181,8 @@ class QrLogin:
         logger.info('二维码获取成功，请打开京东APP扫描')
 
         open_image(add_bg_for_qr(self.qrcode_img_file))
-        if global_config.getRaw('messenger', 'email_enable') == 'true':
-            email.send('二维码获取成功，请打开京东APP扫描', "<img src='cid:qr_code.png'>", [email.mail_user], 'qr_code.png')
+        if global_config.getRaw('messenger', 'bark_enable') == 'true':
+            send_bark('二维码获取成功，请打开京东APP扫描', False)
         return True
 
     def _get_qrcode_ticket(self):

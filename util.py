@@ -95,12 +95,16 @@ def send_wechat(message):
     return requests.get(url, params=payload, headers=headers)
 
 
-def send_bark(message):
+def send_bark(message, show_order=True):
     """推送消息到Bark App"""
     url = 'https://api.day.app/{}/{}/{}'.format(global_config.getRaw('messenger', 'bark_key'), '抢购结果', message)
 
+    scheme = 'openapp.jdmobile://'
+    if show_order:
+        scheme += 'virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
+
     payload = {
-        "url": 'openapp.jdmobile://virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
+        "url": scheme
     }
 
     return requests.get(url, params=payload)
