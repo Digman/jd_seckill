@@ -96,16 +96,19 @@ def send_wechat(message):
     return requests.get(url, params=payload, headers=headers)
 
 
-def send_bark(message, show_order=True):
+def send_bark(message, jump_url=''):
     """推送消息到Bark App"""
     url = 'https://api.day.app/{}/{}/{}'.format(global_config.getRaw('messenger', 'bark_key'), '抢购结果', message)
 
-    scheme = 'openapp.jdmobile://'
-    if show_order:
-        scheme += 'virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
+    if jump_url == 'scan':
+        # 扫描登录
+        jump_url = 'openapp.jdmobile://'
+    elif jump_url == 'order':
+        # 订单列表
+        jump_url = 'openapp.jdmobile://virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
 
     payload = {
-        "url": scheme
+        "url": jump_url
     }
 
     return requests.get(url, params=payload)
@@ -119,17 +122,31 @@ def response_status(resp):
 
 
 def open_image(image_file):
+    jump_url = None
     if os.name == "nt":
         os.system('start ' + image_file)  # for Windows
     else:
-        if os.uname()[0] == "Linux":
-            if "deepin" in os.uname()[2]:
-                os.system("deepin-image-viewer " + image_file)  # for deepin
+        is_showed = False
+        # 使用zbar解析二维码
+        qr_url = os.popen("zbarimg " + image_file).read()
+        if qr_url:
+            jump_url = qr_url.replace('QR-Code:', '').strip()
+            # 使用命令行直接展示二维码
+            if os.system("qrencode '" + qr_url + "' -o - -t UTF8") == 0:
+                is_showed = True
+                print("\n")
+        if not is_showed:
+            jump_url = 'scan'
+            if os.uname()[0] == "Linux":
+                if "deepin" in os.uname()[2]:
+                    os.system("deepin-image-viewer " + image_file)  # for deepin
+                else:
+                    os.system("eog " + image_file)
             else:
-                # os.system("eog " + image_file)  # for Linux
-                os.system("zbarimg " + image_file + " | qrencode -o - -t UTF8") # for Linux Terminal
-        else:
-            os.system("open " + image_file)  # for Mac
+                os.system("open " + image_file)  # for Mac
+
+    if jump_url and global_config.getRaw('messenger', 'bark_enable') == 'true':
+        send_bark('二维码获取成功，请打开京东APP扫描', jump_url)
 
 
 def save_image(resp, image_file):

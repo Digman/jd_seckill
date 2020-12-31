@@ -179,10 +179,7 @@ class QrLogin:
 
         save_image(resp, self.qrcode_img_file)
         logger.info('二维码获取成功，请打开京东APP扫描')
-
         open_image(self.qrcode_img_file)
-        if global_config.getRaw('messenger', 'bark_enable') == 'true':
-            send_bark('二维码获取成功，请打开京东APP扫描', False)
         return True
 
     def _get_qrcode_ticket(self):
@@ -210,6 +207,8 @@ class QrLogin:
         resp_json = parse_json(resp.text)
         if resp_json['code'] != 200:
             logger.info('Code: %s, Message: %s', resp_json['code'], resp_json['msg'])
+            if resp_json['code'] == 205:
+                raise Exception(resp_json['msg'])
             return None
         else:
             logger.info('已完成手机客户端确认')
@@ -662,7 +661,7 @@ class JdSeckill(object):
             if self.wechat_enable == 'true':
                 send_wechat(message)
             if self.bark_enable == 'true':
-                send_bark(message)
+                send_bark(message, 'order')
             return True
         else:
             logger.info('抢购失败，返回信息:{}'.format(resp_json))
@@ -676,6 +675,6 @@ class JdSeckill(object):
         else:
             logger.warning("微信推送未启用")
         if self.bark_enable == 'true':
-            logger.info("send bark: {}".format(send_bark(message).text))
+            logger.info("send bark: {}".format(send_bark(message, 'order').text))
         else:
             logger.warning("Bark推送未启用")
