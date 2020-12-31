@@ -12,10 +12,10 @@ class Timer(object):
     def __init__(self, sleep_interval=0.5):
         self.buy_time = 0
         self.buy_time_ms = 0
-        self.sleep_interval = sleep_interval
         self.start_time = 0
         self.init_time()
         self.diff_time = self.local_jd_time_diff()
+        self.sleep_interval = sleep_interval
         self.max_duration = int(global_config.getRaw('config', 'seckill_duration'))
 
     def init_time(self, t=None):
