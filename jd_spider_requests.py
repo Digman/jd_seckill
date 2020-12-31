@@ -291,6 +291,14 @@ class JdSeckill(object):
         self.nick_name = None
         self.success = False
 
+        self.wechat_enable = global_config.getRaw('messenger', 'enable')
+        self.bark_enable = global_config.getRaw('messenger', 'bark_enable')
+
+        logger.info(
+            "初始化成功，进程数量【%d】, 抢购商品数量【%d】, 初始抢购时间【%s】, 持续抢购时长【%d毫秒】",
+            self.work_count, self.seckill_num, self.timers.buy_time, self.timers.max_duration
+        )
+
     def login_by_qrcode(self):
         """
         二维码登陆
@@ -406,17 +414,20 @@ class JdSeckill(object):
         buy_stime = resp_json.get('qiangStime')
         self.timers.init_time(reserve_stime)
         self.timers.start('预约')
-        message = '预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约'
         while self.timers.enabled():
             try:
-                self.session.get(url='https:' + reserve_url)
+                res = self.session.get(url='https:' + reserve_url)
                 # 从api设定抢购开始时间
                 self.timers.init_time(buy_stime)
+                if res.text.find("预约成功，已获得抢购资格") > 0:
+                    message = '预约成功，已获得抢购资格'
+                    if self.wechat_enable == 'true':
+                        send_wechat(message)
+                    if self.bark_enable == 'true':
+                        send_bark(message)
+                else:
+                    message = '您已成功预约过了，无需重复预约'
                 logger.info(message)
-                if global_config.getRaw('messenger', 'enable') == 'true':
-                    send_wechat(message)
-                if global_config.getRaw('messenger', 'bark_enable') == 'true':
-                    send_bark(message)
                 break
             except Exception as e:
                 logger.error('预约失败正在重试...')
@@ -648,9 +659,9 @@ class JdSeckill(object):
             pay_url = 'https:' + resp_json.get('pcUrl')
             message = '抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id, total_money, pay_url)
             logger.info(message)
-            if global_config.getRaw('messenger', 'enable') == 'true':
+            if self.wechat_enable == 'true':
                 send_wechat(message)
-            if global_config.getRaw('messenger', 'bark_enable') == 'true':
+            if self.bark_enable == 'true':
                 send_bark(message)
             return True
         else:
@@ -660,11 +671,11 @@ class JdSeckill(object):
     def test_message(self):
         """推送测试消息"""
         message = '抢购成功，订单号:{}, 总价:{}'.format(int(time.time() * 10000), 1499 * random.randint(1, 2))
-        if global_config.getRaw('messenger', 'enable') == 'true':
+        if self.wechat_enable == 'true':
             logger.info("send wechat: {}".format(send_wechat(message).text))
         else:
             logger.warning("微信推送未启用")
-        if global_config.getRaw('messenger', 'bark_enable') == 'true':
+        if self.bark_enable == 'true':
             logger.info("send bark: {}".format(send_bark(message).text))
         else:
             logger.warning("Bark推送未启用")

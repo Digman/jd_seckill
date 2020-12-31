@@ -11,7 +11,7 @@ def set_logger():
     logger.setLevel(logging.INFO)
     # formatter = logging.Formatter('%(asctime)s - %(process)d-%(threadName)s - '
     #                              '%(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
-    formatter = logging.Formatter('%(asctime)s - %(processName)s[%(levelname)s]: %(message)s')
+    formatter = logging.Formatter('%(asctime)s-%(processName)s[%(levelname)s]: %(message)s')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
