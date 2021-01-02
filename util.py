@@ -7,6 +7,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from urllib.parse import quote
 
 from config import global_config
 from jd_logger import logger
@@ -98,14 +99,30 @@ def send_wechat(message):
 
 def send_bark(message, jump_url=''):
     """推送消息到Bark App"""
-    url = 'https://api.day.app/{}/{}/{}'.format(global_config.getRaw('messenger', 'bark_key'), '抢购结果', message)
-
+    url = 'https://api.day.app/{}/{}/{}'.format(global_config.getRaw('messenger', 'bark_key'), '预约/抢购结果', message)
+    scheme = 'openapp.jdmobile://virtual?params={}'
     if jump_url == 'scan':
         # 扫描登录
-        jump_url = 'openapp.jdmobile://'
+        params = json.dumps({
+            "category": 'jump',
+            "des": 'HomePage',
+        })
+        jump_url = scheme.format(quote(params))
+    elif jump_url == 'detail':
+        # 商品详情
+        params = json.dumps({
+            "category": 'jump',
+            "des": 'productDetail',
+            "skuId": global_config.getRaw('config', 'sku_id'),
+        })
+        jump_url = scheme.format(quote(params))
     elif jump_url == 'order':
         # 订单列表
-        jump_url = 'openapp.jdmobile://virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22orderlist%22%7D'
+        params = json.dumps({
+            "category": 'jump',
+            "des": 'orderlist',
+        })
+        jump_url = scheme.format(quote(params))
 
     payload = {
         "url": jump_url

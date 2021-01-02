@@ -164,7 +164,7 @@ class QrLogin:
         url = 'https://qr.m.jd.com/show'
         payload = {
             'appid': 133,
-            'size': 300,
+            'size': 200,
             't': str(int(time.time() * 1000)),
         }
         headers = {
@@ -423,7 +423,7 @@ class JdSeckill(object):
                     if self.wechat_enable == 'true':
                         send_wechat(message)
                     if self.bark_enable == 'true':
-                        send_bark(message)
+                        send_bark(message, 'detail')
                 else:
                     message = '您已成功预约过了，无需重复预约'
                 logger.info(message)
@@ -552,6 +552,7 @@ class JdSeckill(object):
         headers = {
             'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
+            'Referer': 'https://marathon.jd.com/seckill/seckill.action'
         }
         resp = self.session.post(url=url, data=data, headers=headers)
 
